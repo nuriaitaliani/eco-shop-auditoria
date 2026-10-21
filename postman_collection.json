@@ -1,0 +1,34 @@
+{
+	"info": {
+		"name": "Eco-Shop Audit Suite",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Aplicar Descuento",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"price\": 100,\n    \"coupon\": \"ECO20\"\n}",
+					"options": { "raw": { "language": "json" } }
+				},
+				"url": { "raw": "http://127.0.0.1:5000/api/discount" }
+			}
+		},
+		{
+			"name": "Checkout Pedido",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"email\": \"usuario@correo.com\",\n    \"product_id\": 101,\n    \"quantity\": 2\n}",
+					"options": { "raw": { "language": "json" } }
+				},
+				"url": { "raw": "http://127.0.0.1:5000/api/checkout" }
+			}
+		}
+	]
+}
