@@ -23,8 +23,7 @@ scripts:
 
       \    const datos = pm.response.json();\r
 
-      \    pm.expect(datos.order_details.email).to.eql(\"alicia@example.com\");\
-      \r
+      \    pm.expect(datos.order_details.email).to.eql(\"alicia@example.com\");\r
 
       \    pm.expect(datos.order_details.quantity).to.eql(2);\r
 
@@ -37,6 +36,20 @@ scripts:
       \    const datos = pm.response.json();\r
 
       \    pm.expect(datos.order_details.total_pay).to.eql(10);\r
+
+      });\r
+
+      \r
+
+      pm.test(\"Devuelve el identificador del pedido\", function () {\r
+
+      \    const datos = pm.response.json();\r
+
+      \    pm.expect(datos.order_id).to.be.a(\"number\");\r
+
+      \    pm.expect(Number.isInteger(datos.order_id)).to.eql(true);\r
+
+      \    pm.expect(datos.order_id).to.be.above(0);\r
 
       });"
     language: text/javascript
