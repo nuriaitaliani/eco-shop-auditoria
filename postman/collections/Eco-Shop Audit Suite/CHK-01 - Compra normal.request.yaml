@@ -1,0 +1,43 @@
+$kind: http-request
+url: http://127.0.0.1:5000/api/checkout
+method: POST
+body:
+  type: json
+  content: |-
+    {
+      "email": "alicia@example.com",
+      "product_id": 101,
+      "quantity": 2
+    }
+scripts:
+  - type: afterResponse
+    code: "pm.test(\"HTTP 200 para compra valida\", function () {\r
+
+      \    pm.response.to.have.status(200);\r
+
+      });\r
+
+      \r
+
+      pm.test(\"La respuesta identifica cliente y cantidad\", function () {\r
+
+      \    const datos = pm.response.json();\r
+
+      \    pm.expect(datos.order_details.email).to.eql(\"alicia@example.com\");\
+      \r
+
+      \    pm.expect(datos.order_details.quantity).to.eql(2);\r
+
+      });\r
+
+      \r
+
+      pm.test(\"El total de dos unidades es 10\", function () {\r
+
+      \    const datos = pm.response.json();\r
+
+      \    pm.expect(datos.order_details.total_pay).to.eql(10);\r
+
+      });"
+    language: text/javascript
+order: 21000
