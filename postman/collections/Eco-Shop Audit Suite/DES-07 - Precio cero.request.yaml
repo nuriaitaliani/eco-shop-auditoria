@@ -18,7 +18,8 @@ scripts:
 
       \r
 
-      pm.test(\"La respuesta conserva el cero e identifica el descuento\", function () {\r
+      pm.test(\"La respuesta conserva el cero e identifica el descuento\",
+      function () {\r
 
       \    const datos = pm.response.json();\r
 
@@ -40,4 +41,4 @@ scripts:
 
       });"
     language: text/javascript
-order: 6000
+order: 11000

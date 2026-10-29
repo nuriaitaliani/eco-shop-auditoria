@@ -1,0 +1,43 @@
+$kind: http-request
+url: http://127.0.0.1:5000/api/discount
+method: POST
+body:
+  type: json
+  content: |-
+    {
+      "price": 2.675
+    }
+scripts:
+  - type: afterResponse
+    code: "pm.test(\"HTTP 200 para precio decimal\", function () {\r
+
+      \    pm.response.to.have.status(200);\r
+
+      });\r
+
+      \r
+
+      pm.test(\"Conserva el precio original y no aplica descuento\", function ()
+      {\r
+
+      \    const datos = pm.response.json();\r
+
+      \    pm.expect(datos.status).to.eql(\"success\");\r
+
+      \    pm.expect(datos.original_price).to.eql(2.675);\r
+
+      \    pm.expect(datos.discount_applied).to.eql(\"0%\");\r
+
+      });\r
+
+      \r
+
+      pm.test(\"Redondea 2.675 a 2.68 con ROUND_HALF_UP\", function () {\r
+
+      \    const datos = pm.response.json();\r
+
+      \    pm.expect(datos.final_price).to.eql(2.68);\r
+
+      });"
+    language: text/javascript
+order: 2000

@@ -37,4 +37,4 @@ scripts:
 
       });"
     language: text/javascript
-order: 5000
+order: 10000

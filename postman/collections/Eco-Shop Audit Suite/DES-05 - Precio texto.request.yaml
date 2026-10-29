@@ -38,4 +38,4 @@ scripts:
 
       });"
     language: text/javascript
-order: 4000
+order: 9000

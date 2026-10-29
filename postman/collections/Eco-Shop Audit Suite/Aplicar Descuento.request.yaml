@@ -5,8 +5,8 @@ body:
   type: json
   content: |-
     {
-        "price": 100,
-        "coupon": "ECO20"
+      "price": 100,
+      "coupon": "ECO20"
     }
 scripts:
   - type: afterResponse
@@ -18,7 +18,8 @@ scripts:
 
       \r
 
-      pm.test(\"La respuesta identifica el precio y el descuento\", function () {\r
+      pm.test(\"La respuesta identifica el precio y el descuento\", function ()
+      {\r
 
       \    const datos = pm.response.json();\r
 
@@ -40,4 +41,4 @@ scripts:
 
       });"
     language: text/javascript
-order: 8000
+order: 13000

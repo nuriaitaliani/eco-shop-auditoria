@@ -17,7 +17,8 @@ scripts:
 
       \r
 
-      pm.test(\"La respuesta indica que no se aplica descuento\", function () {\r
+      pm.test(\"La respuesta indica que no se aplica descuento\", function ()
+      {\r
 
       \    const datos = pm.response.json();\r
 
@@ -39,4 +40,4 @@ scripts:
 
       });"
     language: text/javascript
-order: 1000
+order: 3000
