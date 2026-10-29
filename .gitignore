@@ -2,3 +2,7 @@ database.sqlite
 __pycache__/
 *.pyc
 .venv/
+
+# Vinculacion del workspace y variables globales de Postman
+.postman/
+postman/globals/
