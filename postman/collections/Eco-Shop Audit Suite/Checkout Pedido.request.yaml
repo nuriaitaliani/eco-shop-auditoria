@@ -1,0 +1,12 @@
+$kind: http-request
+url: http://127.0.0.1:5000/api/checkout
+method: POST
+body:
+  type: json
+  content: |-
+    {
+        "email": "usuario@correo.com",
+        "product_id": 101,
+        "quantity": 2
+    }
+order: 9000
