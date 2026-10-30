@@ -2,86 +2,355 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Eco-Shop | Finalizar Compra</title>
     <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+        }
+
         body {
             font-family: sans-serif;
             background: #f4f4f4;
             padding: 20px;
+            margin: 0;
+            color: #1a1a1a;
         }
 
         .checkout-card {
             background: white;
             padding: 20px;
             max-width: 400px;
+            width: 100%;
             margin: auto;
             border-radius: 8px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         }
 
-        .btn-buy {
-            background: #00008b;
-            color: #000;
-            padding: 15px;
-            width: 100%;
-            border: none;
-            margin-top: 20px;
-            cursor: pointer;
+        h2 {
+            margin-top: 0;
+            overflow-wrap: anywhere;
+        }
+
+        .field {
+            margin-bottom: 12px;
+        }
+
+        label {
+            display: block;
+            font-weight: 700;
+            margin-bottom: 4px;
+            color: #1a1a1a;
         }
 
         input {
-            width: 90%;
+            width: 100%;
+            max-width: 100%;
             padding: 10px;
-            margin-bottom: 10px;
+            margin: 0;
+            border: 1px solid #4a4a4a;
+            font-size: 1rem;
+            color: #1a1a1a;
+            background: #fff;
         }
 
-        .error-msg {
-            color: red;
-            display: none;
-            font-size: 12px;
+        .field-error {
+            color: #9b0000;
+            font-size: 0.875rem;
+            margin: 4px 0 0;
+            min-height: 1.2em;
+        }
+
+        .btn-buy {
+            background: #00008b;
+            color: #fff;
+            padding: 15px;
+            width: 100%;
+            max-width: 100%;
+            border: 2px solid #00008b;
+            margin-top: 20px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 700;
+        }
+
+        .btn-buy[aria-disabled="true"] {
+            cursor: wait;
+            opacity: 0.85;
+        }
+
+        input:focus-visible,
+        .btn-buy:focus-visible {
+            outline: 3px solid #000;
+            outline-offset: 3px;
+        }
+
+        .total-line {
+            margin: 16px 0 0;
+            overflow-wrap: anywhere;
+        }
+
+        #status-message {
+            margin-top: 10px;
+            overflow-wrap: anywhere;
+        }
+
+        #status-message.is-error {
+            color: #9b0000;
+        }
+
+        #status-message.is-success {
+            color: #0b5c0b;
+        }
+
+        @media (max-width: 320px) {
+            body {
+                padding: 12px;
+            }
+
+            .checkout-card {
+                padding: 12px;
+                border-radius: 8px;
+            }
         }
     </style>
 </head>
-
 <body>
-
     <div class="checkout-card">
         <h2>Finalizar Pedido</h2>
 
-        <input type="text" id="email" placeholder="Tu Email">
-        <input type="number" id="prod_id" placeholder="ID del Producto (ej: 101)">
-        <input type="number" id="qty" placeholder="Cantidad">
+        <form id="checkout-form" novalidate>
+            <div class="field">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" placeholder="Tu Email" autocomplete="email" required aria-describedby="email-error">
+                <p class="field-error" id="email-error"></p>
+            </div>
 
-        <p>Total a pagar: <span id="total">0,00 EUR</span></p>
+            <div class="field">
+                <label for="prod_id">ID del producto</label>
+                <input type="text" id="prod_id" name="prod_id" inputmode="numeric" placeholder="ID del Producto (ej: 101)" required aria-describedby="prod_id-error">
+                <p class="field-error" id="prod_id-error"></p>
+            </div>
 
-        <button class="btn-buy" onclick="processOrder()">COMPRAR AHORA</button>
-        <p id="status-message" style="margin-top:10px;"></p>
+            <div class="field">
+                <label for="qty">Cantidad</label>
+                <input type="text" id="qty" name="qty" inputmode="numeric" placeholder="Cantidad" required aria-describedby="qty-error">
+                <p class="field-error" id="qty-error"></p>
+            </div>
+
+            <p class="total-line">Total a pagar: <span id="total">Pendiente de calcular</span></p>
+
+            <button type="submit" class="btn-buy" id="btn-buy">COMPRAR AHORA</button>
+        </form>
+
+        <p id="status-message" role="status" aria-live="polite"></p>
     </div>
 
     <script>
-        function processOrder() {
-            const email = document.getElementById('email').value;
-            const qty = document.getElementById('qty').value;
-            const prodId = document.getElementById('prod_id').value;
+        const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+        const UNCONFIRMED_RESULT_MSG =
+            "No se puede confirmar el resultado del pedido. Comprueba si el pedido se ha registrado antes de volver a enviarlo.";
+        const FIELD_IDS = ["email", "prod_id", "qty"];
+        const form = document.getElementById("checkout-form");
+        const btnBuy = document.getElementById("btn-buy");
+        const statusEl = document.getElementById("status-message");
+        const totalEl = document.getElementById("total");
+        let requestInFlight = false;
 
-            fetch('/api/checkout', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    email: email,
-                    product_id: parseInt(prodId),
-                    quantity: parseInt(qty)
-                })
-            })
-            .then(res => res.json())
-            .then(data => {
-                document.getElementById('status-message').innerText = data.message || data.error;
-            })
-            .catch(err => {
-                console.log("Error critico");
+        function parsePositiveInteger(raw) {
+            const value = String(raw).trim();
+            if (value === "" || /[.eExX+\-]/.test(value)) {
+                return null;
+            }
+            if (!/^\d+$/.test(value)) {
+                return null;
+            }
+            const n = Number(value);
+            if (!Number.isInteger(n) || n <= 0 || !Number.isSafeInteger(n)) {
+                return null;
+            }
+            return n;
+        }
+
+        function isPositiveSafeInteger(value) {
+            return Number.isInteger(value) && value > 0 && Number.isSafeInteger(value);
+        }
+
+        function isValidSuccessPayload(data) {
+            if (data === null || typeof data !== "object" || Array.isArray(data)) {
+                return false;
+            }
+            if (!isPositiveSafeInteger(data.order_id)) {
+                return false;
+            }
+            const details = data.order_details;
+            if (details === null || typeof details !== "object" || Array.isArray(details)) {
+                return false;
+            }
+            const totalPay = details.total_pay;
+            return typeof totalPay === "number" && Number.isFinite(totalPay) && totalPay >= 0;
+        }
+
+        function formatEuros(amount) {
+            return Number(amount).toLocaleString("es-ES", {
+                style: "currency",
+                currency: "EUR",
             });
         }
-    </script>
 
+        function resetTotalPending() {
+    totalEl.textContent = "Pendiente de calcular";
+    statusEl.textContent = "";
+    statusEl.className = "";
+}
+
+        function setFieldError(id, message) {
+            const input = document.getElementById(id);
+            const errorEl = document.getElementById(id + "-error");
+            errorEl.textContent = message || "";
+            if (message) {
+                input.setAttribute("aria-invalid", "true");
+            } else {
+                input.removeAttribute("aria-invalid");
+            }
+        }
+
+        function clearErrors() {
+            FIELD_IDS.forEach(function (id) {
+                setFieldError(id, "");
+            });
+            statusEl.textContent = "";
+            statusEl.className = "";
+        }
+
+        function setStatus(message, type) {
+            statusEl.textContent = message;
+            statusEl.className = type === "error" ? "is-error" : "is-success";
+        }
+
+        function setPending(pending) {
+    requestInFlight = pending;
+    btnBuy.setAttribute("aria-disabled", pending ? "true" : "false");
+
+    FIELD_IDS.forEach(function (id) {
+        document.getElementById(id).readOnly = pending;
+    });
+}
+
+        function focusFirstInvalid() {
+            for (let i = 0; i < FIELD_IDS.length; i++) {
+                const input = document.getElementById(FIELD_IDS[i]);
+                if (input.getAttribute("aria-invalid") === "true") {
+                    input.focus();
+                    return;
+                }
+            }
+        }
+
+        function validate() {
+            const emailRaw = document.getElementById("email").value.trim();
+            const prodRaw = document.getElementById("prod_id").value;
+            const qtyRaw = document.getElementById("qty").value;
+            let ok = true;
+
+            if (emailRaw === "") {
+                setFieldError("email", "Indica un email.");
+                ok = false;
+            } else if (!EMAIL_RE.test(emailRaw)) {
+                setFieldError("email", "El email no tiene un formato válido.");
+                ok = false;
+            } else {
+                setFieldError("email", "");
+            }
+
+            const productId = parsePositiveInteger(prodRaw);
+            if (String(prodRaw).trim() === "") {
+                setFieldError("prod_id", "Indica el ID del producto.");
+                ok = false;
+            } else if (productId === null) {
+                setFieldError("prod_id", "El ID del producto debe ser un entero positivo, sin decimales.");
+                ok = false;
+            } else {
+                setFieldError("prod_id", "");
+            }
+
+            const quantity = parsePositiveInteger(qtyRaw);
+            if (String(qtyRaw).trim() === "") {
+                setFieldError("qty", "Indica la cantidad.");
+                ok = false;
+            } else if (quantity === null) {
+                setFieldError("qty", "La cantidad debe ser un entero positivo, sin decimales.");
+                ok = false;
+            } else {
+                setFieldError("qty", "");
+            }
+
+            return ok ? { email: emailRaw, product_id: productId, quantity: quantity } : null;
+        }
+
+        async function processOrder(payload) {
+            setPending(true);
+            setStatus("Enviando el pedido…", "success");
+
+            try {
+                const res = await fetch("/api/checkout", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload),
+                });
+
+                let data = null;
+                try {
+                    data = await res.json();
+                } catch (parseErr) {
+                    data = null;
+                }
+
+                if (!res.ok) {
+                    const apiError = data && (data.error || data.message);
+                    if (apiError) {
+                        setStatus("No se pudo completar la compra: " + apiError, "error");
+                    } else {
+                        setStatus("No se pudo completar la compra (error HTTP " + res.status + ").", "error");
+                    }
+                    return;
+                }
+
+                if (!isValidSuccessPayload(data)) {
+                    setStatus(UNCONFIRMED_RESULT_MSG, "error");
+                    return;
+                }
+
+                setStatus(data.message || "Pedido realizado con éxito.", "success");
+                totalEl.textContent = formatEuros(data.order_details.total_pay);
+            } catch (err) {
+                setStatus(UNCONFIRMED_RESULT_MSG, "error");
+            } finally {
+                setPending(false);
+            }
+        }
+
+        FIELD_IDS.forEach(function (id) {
+            document.getElementById(id).addEventListener("input", resetTotalPending);
+        });
+
+        form.addEventListener("submit", function (event) {
+            event.preventDefault();
+            if (requestInFlight) {
+                return;
+            }
+            resetTotalPending();
+            clearErrors();
+            const payload = validate();
+            if (!payload) {
+                setStatus("Revisa los campos marcados antes de comprar.", "error");
+                focusFirstInvalid();
+                return;
+            }
+            processOrder(payload);
+        });
+    </script>
 </body>
 </html>
