@@ -1,0 +1,44 @@
+$kind: http-request
+url: http://127.0.0.1:5000/api/discount
+method: POST
+body:
+  type: json
+  content: |-
+    {
+      "price": 100,
+      "coupon": "ECO20"
+    }
+scripts:
+  - type: afterResponse
+    code: "pm.test(\"HTTP 200 para datos validos\", function () {\r
+
+      \    pm.response.to.have.status(200);\r
+
+      });\r
+
+      \r
+
+      pm.test(\"La respuesta identifica el precio y el descuento\", function ()
+      {\r
+
+      \    const datos = pm.response.json();\r
+
+      \    pm.expect(datos.status).to.eql(\"success\");\r
+
+      \    pm.expect(datos.original_price).to.eql(100);\r
+
+      \    pm.expect(datos.discount_applied).to.eql(\"20%\");\r
+
+      });\r
+
+      \r
+
+      pm.test(\"ECO20 reduce el precio de 100 a 80\", function () {\r
+
+      \    const datos = pm.response.json();\r
+
+      \    pm.expect(datos.final_price).to.eql(80);\r
+
+      });"
+    language: text/javascript
+order: 13000

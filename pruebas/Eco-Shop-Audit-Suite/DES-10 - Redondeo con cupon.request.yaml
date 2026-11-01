@@ -1,0 +1,44 @@
+$kind: http-request
+url: http://127.0.0.1:5000/api/discount
+method: POST
+body:
+  type: json
+  content: |-
+    {
+      "price": 3.34375,
+      "coupon": "ECO20"
+    }
+scripts:
+  - type: afterResponse
+    code: "pm.test(\"HTTP 200 para precio decimal con ECO20\", function () {\r
+
+      \    pm.response.to.have.status(200);\r
+
+      });\r
+
+      \r
+
+      pm.test(\"Conserva el precio original e identifica ECO20\", function ()
+      {\r
+
+      \    const datos = pm.response.json();\r
+
+      \    pm.expect(datos.status).to.eql(\"success\");\r
+
+      \    pm.expect(datos.original_price).to.eql(3.34375);\r
+
+      \    pm.expect(datos.discount_applied).to.eql(\"20%\");\r
+
+      });\r
+
+      \r
+
+      pm.test(\"Aplica el descuento antes de redondear a 2.68\", function () {\r
+
+      \    const datos = pm.response.json();\r
+
+      \    pm.expect(datos.final_price).to.eql(2.68);\r
+
+      });"
+    language: text/javascript
+order: 1000
