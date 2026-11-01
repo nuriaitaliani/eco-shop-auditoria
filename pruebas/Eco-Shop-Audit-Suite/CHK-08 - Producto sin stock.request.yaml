@@ -1,0 +1,42 @@
+$kind: http-request
+url: http://127.0.0.1:5000/api/checkout
+method: POST
+body:
+  type: json
+  content: |-
+    {
+      "email": "alicia@example.com",
+      "product_id": 104,
+      "quantity": 1
+    }
+scripts:
+  - type: afterResponse
+    code: "pm.test(\"HTTP 400 para producto sin stock\", function () {\r
+
+      \    pm.response.to.have.status(400);\r
+
+      });\r
+
+      \r
+
+      pm.test(\"La respuesta JSON indica un error\", function () {\r
+
+      \    const datos = pm.response.json();\r
+
+      \    pm.expect(datos.status).to.eql(\"error\");\r
+
+      });\r
+
+      \r
+
+      pm.test(\"El mensaje explica la falta de stock\", function () {\r
+
+      \    const datos = pm.response.json();\r
+
+      \    pm.expect(datos.error).to.be.a(\"string\");\r
+
+      \    pm.expect(datos.error.toLowerCase()).to.include(\"stock\");\r
+
+      });"
+    language: text/javascript
+order: 14939

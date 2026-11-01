@@ -1,0 +1,53 @@
+---
+description: Reglas de calidad derivadas de la auditoría de Eco-Shop
+alwaysApply: true
+---
+
+# Calidad de Eco-Shop
+
+## 1. Validar las entradas antes de utilizarlas
+Origen: checkout fallaba con cantidades ausentes o de texto y aceptaba
+cantidades negativas.
+
+- En endpoints JSON, comprobar que el cuerpo sea un objeto válido.
+- Validar presencia, tipo y rango de cada campo.
+- Rechazar booleanos cuando se espere un número.
+- Los identificadores deben ser enteros positivos; las cantidades de compra,
+  enteros positivos; las existencias, enteros mayores o iguales que cero.
+- No convertir silenciosamente texto o decimales en enteros.
+- Comprobar los límites admitidos por SQLite antes de enviarle números.
+
+## 2. Persistir los cambios de forma atómica
+Origen: checkout anunciaba una compra sin guardar el pedido ni descontar stock;
+también había pedidos con referencias inexistentes.
+
+- Usar consultas parametrizadas y activar foreign_keys en cada conexión.
+- Agrupar cambios relacionados en una transacción.
+- Evitar existencias negativas y actualizaciones basadas en lecturas obsoletas.
+- Comprobar que el producto exista y que la actualización afecte a la fila esperada.
+- Confirmar el éxito únicamente después del commit.
+- Ante un fallo, hacer rollback y cerrar siempre la conexión.
+- Conservar los pedidos históricos y las tablas auditoria_*.
+
+## 3. Distinguir errores de entrada de fallos internos
+Origen: algunas entradas provocaban HTTP 500 y las primeras propuestas
+de corrección trataban cualquier fallo de SQLite como un error del cliente.
+
+- En endpoints, devolver errores de validación como JSON con status y error.
+- Usar HTTP 400 para entradas inválidas.
+- Tratar los fallos internos como HTTP 500 y los bloqueos temporales
+  de SQLite como HTTP 503.
+- Registrar los detalles técnicos en el servidor y mostrar mensajes
+  comprensibles al cliente, sin exponer trazas.
+- No anunciar éxito cuando la operación falle.
+
+## 4. Verificar el comportamiento sin ocultar los defectos
+Origen: una respuesta HTTP 200 ocultaba la falta de persistencia y la IA
+propuso cambiar resultados esperados para aceptar comportamientos incorrectos.
+
+- Proponer casos válidos, inválidos y de límite pertinentes al cambio.
+- En operaciones de datos, comprobar el estado persistido y la ausencia
+  de cambios cuando una operación se rechaza.
+- No cambiar una expectativa correcta para hacer pasar una prueba defectuosa.
+- Distinguir código propuesto, código aplicado y pruebas realmente ejecutadas.
+- No afirmar que una prueba pasa sin evidencia de su ejecución.
